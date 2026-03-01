@@ -1,4 +1,4 @@
-# StarBank - Portable SIM-less ISP Router
+#              ⭐Bank - Portable SIM-less ISP Router
 
 <p align="center">
     <img src="https://res.cloudinary.com/dqv8dlj2s/image/upload/v1772326350/favicon_z20pgw.png"/>
