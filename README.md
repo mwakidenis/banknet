@@ -1,5 +1,7 @@
 # StarBank - Portable SIM-less ISP Router
 
+https://res.cloudinary.com/dqv8dlj2s/image/upload/v1772332758/Screenshot_2026-03-01_053836_pk1jcq.png
+
 **StarBank** is a battery-powered, SIM-less portable router that stores ISP/satellite internet access in a "network bank" and serves connected devices as a mini-ISP. Inspired by Starlink, it allows offline internet usage, supply throttling, and LAN refill.
 
 ## Features
