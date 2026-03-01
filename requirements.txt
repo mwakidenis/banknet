@@ -1,0 +1,27 @@
+# StarBank Python Dependencies
+# For CLI tools, NAT engine, and system management
+
+# Core
+python-dotenv==0.21.1
+click==8.1.3
+rich==13.3.5
+
+# Networking
+netifaces==0.11.0
+scapy==2.5.0
+
+# Storage & Data
+python-json-logger==2.0.4
+tinydb==4.7.1
+
+# System
+psutil==5.9.4
+RPi.GPIO==0.7.1
+
+# Web Framework (Alternative)
+flask==2.2.5
+flask-cors==3.0.10
+
+# Testing
+pytest==7.3.1
+pytest-cov==4.0.0

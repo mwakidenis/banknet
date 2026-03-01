@@ -1,0 +1,98 @@
+# StarBank Configuration
+# Portable SIM-less ISP Router
+
+system:
+  name: "StarBank"
+  version: "1.0.0"
+  mode: "router"  # router, gateway, ap
+  debug: false
+
+# Network Banking Configuration
+banking:
+  enabled: true
+  storage_path: "/var/lib/starbank/bank.db"
+  max_capacity_mb: 10240  # 10GB max
+  refill_threshold_mb: 512  # Auto-refill when below 512MB
+  default_speed_mbps: 2  # Default supply speed
+
+# Wi-Fi Configuration
+wifi:
+  ap:
+    ssid: "StarBank-Default"
+    password: "starbank123"
+    channel: 6
+    hidden: false
+    driver: "nl80211"
+  client:
+    enabled: true
+    reconnect: true
+    scan_interval_sec: 30
+
+# Network Interfaces
+network:
+  lan_interface: "eth0"
+  wan_interface: "wlan0"
+  lan_ip: "192.168.100.1"
+  lan_netmask: "255.255.255.0"
+  dhcp:
+    enabled: true
+    range_start: "192.168.100.100"
+    range_end: "192.168.100.200"
+    lease_time_hours: 24
+
+# NAT Configuration
+nat:
+  enabled: true
+  masq_enabled: true
+  forwarding_rules: []
+
+# Scheduler Configuration
+scheduler:
+  auto_refill:
+    enabled: true
+    interval_minutes: 60
+    preferred_upstream: "wifi"  # wifi, lan, satellite
+  battery_monitoring:
+    enabled: true
+    low_battery_threshold: 20  # percentage
+    critical_threshold: 10
+  power_save:
+    enabled: true
+    idle_timeout_minutes: 30
+
+# Satellite Module (Optional)
+satellite:
+  enabled: false
+  module_type: "starlink"  # starlink, lora, custom
+  api_endpoint: "http://localhost:9000"
+  auto_connect: true
+
+# Battery Configuration
+battery:
+  type: "LiPo"
+  capacity_mah: 15000
+  voltage: 3.7
+  cells: 2
+  charging:
+    enabled: true
+    max_current_ma: 2000
+
+# API Server
+api:
+  host: "0.0.0.0"
+  port: 3000
+  cors_enabled: true
+
+# Web Dashboard
+web:
+  enabled: true
+  port: 3000
+  username: "admin"
+  password: "starbank"
+
+# Logging
+logging:
+  level: "info"
+  file: "/var/log/starbank.log"
+  max_size_mb: 10
+  rotation: true

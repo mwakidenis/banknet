@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StarBank - Network Banking Router</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #ffffff; color: #000; font-size: 12px; }
+    .container { max-width: 100%; padding: 10px; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; background: #f0f0f0; border-bottom: 2px solid #0066cc; margin-bottom: 10px; }
+    .logo h1 { font-size: 16px; color: #0066cc; font-weight: 600; }
+    .status-indicator { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #28a745; }
+    .status-dot.offline { background: #dc3545; }
+    
+    .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .card { background: #fafafa; border: 1px solid #ddd; border-radius: 4px; padding: 10px; }
+    .card h2 { font-size: 13px; color: #000; font-weight: 600; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+    
+    .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .stat-label { color: #666; }
+    .stat-value { color: #28a745; font-weight: 600; }
+    .stat-value.warning { color: #ffc107; }
+    .stat-value.danger { color: #dc3545; }
+    
+    .progress-bar { width: 100%; height: 8px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin: 5px 0; }
+    .progress-fill { height: 100%; background: #28a745; transition: width 0.3s; }
+    .progress-fill.warning { background: #ffc107; }
+    .progress-fill.danger { background: #dc3545; }
+    
+    .btn { padding: 5px 12px; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: 500; margin-right: 5px; }
+    .btn-primary { background: #0066cc; color: #fff; }
+    .btn-primary:hover { background: #0052a3; }
+    .btn-secondary { background: #6c757d; color: #fff; }
+    .btn-secondary:hover { background: #5a6268; }
+    
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #f5f5f5; color: #000; font-weight: 600; }
+    tr:hover { background: #f9f9f9; }
+    
+    .form-group { margin-bottom: 8px; }
+    .form-group label { display: block; margin-bottom: 3px; color: #666; font-size: 11px; }
+    .form-group input, .form-group select { width: 100%; padding: 5px; border: 1px solid #ddd; border-radius: 3px; font-size: 11px; }
+    
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+    .modal.active { display: flex; }
+    .modal-content { background: #fff; padding: 15px; border-radius: 4px; max-width: 350px; width: 90%; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .modal-header h3 { font-size: 14px; }
+    .close { background: none; border: none; font-size: 18px; cursor: pointer; }
+    
+    .inline-form { display: flex; align-items: center; gap: 5px; }
+    .inline-form input { width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 11px; }
+    .slider-container { margin: 8px 0; }
+    .slider-container input[type="range"] { width: 100%; }
+    .slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: #666; }
+    
+    .badge { padding: 2px 6px; border-radius: 2px; font-size: 10px; }
+    .badge-success { background: #d4edda; color: #155724; }
+    .badge-warning { background: #fff3cd; color: #856404; }
+    .badge-info { background: #d1ecf1; color: #0c5460; }
+    
+    .full-width { grid-column: span 4; }
+    .half-width { grid-column: span 2; }
+    
+    .actions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo"><h1>StarBank Router</h1></div>
+      <div class="status-indicator">
+        <div class="status-dot" id="connectionStatus"></div>
+        <span id="connectionText">Online</span>
+      </div>
+    </header>
+
+    <div class="dashboard">
+      <!-- Network Bank -->
+      <div class="card">
+        <h2>Network Bank</h2>
+        <div class="stat-row"><span class="stat-label">Balance:</span><span class="stat-value" id="bankBalance">0 MB</span></div>
+        <div class="stat-row"><span class="stat-label">Used:</span><span class="stat-value" id="bankUsed">0 MB</span></div>
+        <div class="stat-row"><span class="stat-label">Capacity:</span><span class="stat-value" id="bankCapacity">10240 MB</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="bankProgress" style="width: 0%"></div></div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="openModal('refill')">Refill</button>
+        </div>
+      </div>
+
+      <!-- Supply Speed -->
+      <div class="card">
+        <h2>Supply Speed</h2>
+        <div class="stat-row"><span class="stat-label">Current:</span><span class="stat-value" id="supplySpeed">2 Mbps</span></div>
+        <div class="stat-row"><span class="stat-label">Est. Hours:</span><span class="stat-value" id="timeRemaining">0 hrs</span></div>
+        <div class="slider-container">
+          <input type="range" id="speedSlider" min="1" max="100" value="2" onchange="updateSpeed(this.value)">
+          <div class="slider-labels"><span>1</span><span id="speedValue">2</span><span>100</span></div>
+        </div>
+      </div>
+
+      <!-- Wi-Fi Status -->
+      <div class="card">
+        <h2>Wi-Fi</h2>
+        <div class="stat-row"><span class="stat-label">AP SSID:</span><span class="stat-value" id="apSSID">StarBank</span></div>
+        <div class="stat-row"><span class="stat-label">Clients:</span><span class="stat-value" id="clientCount">0</span></div>
+        <div class="stat-row"><span class="stat-label">Upstream:</span><span class="stat-value" id="upstreamStatus">Disconnected</span></div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="openModal('connect')">Connect</button>
+          <button class="btn btn-secondary" onclick="scanNetworks()">Scan</button>
+        </div>
+      </div>
+
+      <!-- System Status -->
+      <div class="card">
+        <h2>System</h2>
+        <div class="stat-row"><span class="stat-label">Uptime:</span><span class="stat-value" id="uptime">0:00:00</span></div>
+        <div class="stat-row"><span class="stat-label">Refills:</span><span class="stat-value" id="refillCount">0</span></div>
+        <div class="stat-row"><span class="stat-label">Last Refill:</span><span class="stat-value" id="lastRefill">Never</span></div>
+        <div class="actions">
+          <button class="btn btn-secondary" onclick="refreshStatus()">Refresh</button>
+        </div>
+      </div>
+
+      <!-- Transactions -->
+      <div class="card full-width">
+        <h2>Recent Transactions</h2>
+        <table>
+          <thead><tr><th>Time</th><th>Type</th><th>Amount</th><th>Balance</th><th>Source</th></tr></thead>
+          <tbody id="transactions">
+            <tr><td colspan="5" style="text-align:center;color:#999;">No transactions</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Refill Modal -->
+  <div class="modal" id="refillModal">
+    <div class="modal-content">
+      <div class="modal-header"><h3>Refill Bank</h3><button class="close" onclick="closeModal('refill')">&times;</button></div>
+      <div class="form-group"><label>Amount (MB)</label><input type="number" id="refillAmount" value="1024"></div>
+      <div class="form-group"><label>Source</label>
+        <select id="refillSource">
+          <option value="manual">Manual</option>
+          <option value="satellite">Satellite</option>
+          <option value="lan">LAN</option>
+          <option value="wifi">Wi-Fi</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="performRefill()">Refill</button>
+    </div>
+  </div>
+
+  <!-- Connect Modal -->
+  <div class="modal" id="connectModal">
+    <div class="modal-content">
+      <div class="modal-header"><h3>Connect Wi-Fi</h3><button class="close" onclick="closeModal('connect')">&times;</button></div>
+      <div class="form-group"><label>SSID</label><input type="text" id="connectSSID"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="connectPassword"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="connectToNetwork()">Connect</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const API_BASE = '/api';
+    let startTime = Date.now();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      connectSocket();
+      refreshStatus();
+      setInterval(refreshStatus, 5000);
+      setInterval(updateUptime, 1000);
+    });
+
+    function connectSocket() {
+      socket = io();
+      socket.on('status_update', updateDashboard);
+      socket.on('connect', () => { document.getElementById('connectionStatus').classList.remove('offline'); document.getElementById('connectionText').textContent = 'Online'; });
+      socket.on('disconnect', () => { document.getElementById('connectionStatus').classList.add('offline'); document.getElementById('connectionText').textContent = 'Offline'; });
+    }
+
+    function updateDashboard(data) {
+      if (data.bank) {
+        document.getElementById('bankBalance').textContent = data.bank.availableMB + ' MB';
+        document.getElementById('bankUsed').textContent = data.bank.usedMB + ' MB';
+        const pct = parseFloat(data.bank.usagePercentage);
+        const bar = document.getElementById('bankProgress');
+        bar.style.width = pct + '%';
+        bar.className = 'progress-fill' + (pct > 80 ? ' danger' : pct > 50 ? ' warning' : '');
+        document.getElementById('supplySpeed').textContent = data.bank.supplySpeedMbps + ' Mbps';
+        document.getElementById('speedSlider').value = data.bank.supplySpeedMbps;
+        document.getElementById('speedValue').textContent = data.bank.supplySpeedMbps;
+        document.getElementById('timeRemaining').textContent = data.bank.estimatedHoursRemaining.toFixed(1) + ' hrs';
+      }
+      if (data.wifi) {
+        document.getElementById('apSSID').textContent = data.wifi.ap?.ssid || 'StarBank';
+        document.getElementById('upstreamStatus').textContent = data.wifi.client?.connected ? data.wifi.client.ssid : 'Disconnected';
+      }
+    }
+
+    async function refreshStatus() {
+      try {
+        const [bank, wifi] = await Promise.all([
+          fetch(API_BASE + '/bank/status').then(r => r.json()),
+          fetch(API_BASE + '/wifi/status').then(r => r.json())
+        ]);
+        updateDashboard({ bank, wifi });
+        document.getElementById('refillCount').textContent = bank.refillCount || 0;
+        document.getElementById('lastRefill').textContent = bank.lastRefill ? new Date(bank.lastRefill).toLocaleString() : 'Never';
+        const trans = await fetch(API_BASE + '/bank/transactions?limit=10').then(r => r.json());
+        updateTransactions(trans);
+      } catch (e) { console.error(e); }
+    }
+
+    function updateTransactions(trans) {
+      const tbody = document.getElementById('transactions');
+      if (!trans || trans.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No transactions</td></tr>'; return; }
+      tbody.innerHTML = trans.reverse().map(t => `<tr><td>${new Date(t.timestamp).toLocaleTimeString()}</td><td><span class="badge ${t.type==='refill'?'badge-success':'badge-warning'}">${t.type}</span></td><td class="stat-value">${t.amount}MB</td><td class="stat-value">${t.balanceAfter}MB</td><td>${t.source||'-'}</td></tr>`).join('');
+    }
+
+    function openModal(type) { document.getElementById(type + 'Modal').classList.add('active'); }
+    function closeModal(type) { document.getElementById(type + 'Modal').classList.remove('active'); }
+
+    async function performRefill() {
+      const amount = parseInt(document.getElementById('refillAmount').value);
+      const source = document.getElementById('refillSource').value;
+      try {
+        await fetch(API_BASE + '/bank/refill', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({amount,source}) });
+        closeModal('refill'); refreshStatus();
+      } catch(e) { alert('Error: '+e.message); }
+    }
+
+    async function updateSpeed(speed) {
+      document.getElementById('speedValue').textContent = speed;
+      try { await fetch(API_BASE + '/bank/speed', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({speed:parseInt(speed)}) }); } catch(e) {}
+    }
+
+    async function scanNetworks() { try { await fetch(API_BASE + '/wifi/scan', {method:'POST'}); alert('Scanning...'); } catch(e) {} }
+    async function connectToNetwork() {
+      const ssid = document.getElementById('connectSSID').value;
+      const pw = document.getElementById('connectPassword').value;
+      try {
+        await fetch(API_BASE + '/wifi/connect', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ssid,password:pw}) });
+        closeModal('connect'); refreshStatus();
+      } catch(e) { alert('Error: '+e.message); }
+    }
+
+    function updateUptime() {
+      const e = Date.now() - startTime, h = Math.floor(e/3600000), m = Math.floor((e%3600000)/60000), s = Math.floor((e%60000)/1000);
+      document.getElementById('uptime').textContent = h + ':' + m.toString().padStart(2,'0') + ':' + s.toString().padStart(2,'0');
+    }
+  </script>
+</body>
+</html>
