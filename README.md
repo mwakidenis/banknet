@@ -1,5 +1,5 @@
 <div align="center">
-# ⭐Bank - Portable SIM-less ISP Router
+<b>⭐Bank - Portable SIM-less ISP Router</b>
     </div>
 
 <p align="center">
