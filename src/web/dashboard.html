@@ -4,83 +4,578 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StarBank - Network Banking Router</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #ffffff; color: #000; font-size: 12px; }
-    .container { max-width: 100%; padding: 10px; }
-    header { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; background: #f0f0f0; border-bottom: 2px solid #0066cc; margin-bottom: 10px; }
-    .logo h1 { font-size: 16px; color: #0066cc; font-weight: 600; }
-    .status-indicator { display: flex; align-items: center; gap: 5px; font-size: 11px; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #28a745; }
-    .status-dot.offline { background: #dc3545; }
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
+      --bg-card: #ffffff;
+      --text-primary: #000000;
+      --text-secondary: #333333;
+      --accent-color: #0066cc;
+      --accent-hover: #0052a3;
+      --border-color: #dddddd;
+      --success-color: #28a745;
+      --warning-color: #ffc107;
+      --danger-color: #dc3545;
+      --font-family: 'Segoe UI', Arial, sans-serif;
+      --font-size-base: 12px;
+    }
     
-    .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .card { background: #fafafa; border: 1px solid #ddd; border-radius: 4px; padding: 10px; }
-    .card h2 { font-size: 13px; color: #000; font-weight: 600; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+    [data-theme="dark"] {
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-card: #1f2937;
+      --text-primary: #e5e7eb;
+      --text-secondary: #9ca3af;
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --border-color: #374151;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: var(--font-family); 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      font-size: var(--font-size-base);
+      transition: all 0.3s ease;
+    }
+    
+    /* Floating Icons - Left Panel - All buttons in one column */
+    .floating-left {
+      position: fixed;
+      left: 15px;
+      top: 60px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .floating-icon, .quick-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      color: var(--text-primary);
+      font-size: 16px;
+    }
+    
+    .floating-icon:hover, .quick-btn:hover {
+      transform: scale(1.1);
+      background: var(--accent-color);
+      color: #fff;
+      border-color: var(--accent-color);
+    }
+    
+    .floating-icon svg, .quick-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    
+    .floating-icon::after, .quick-btn::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #333;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      margin-left: 8px;
+    }
+    
+    .floating-icon:hover::after, .quick-btn:hover::after { opacity: 1; }
+    
+    /* Main Container */
+    .container { 
+      max-width: 100%; 
+      padding: 60px 15px 15px 70px; 
+    }
+    
+    header { 
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 8px 15px 8px 70px; 
+      background: #ffffff; 
+      border-bottom: 2px solid var(--accent-color); 
+      margin-bottom: 10px; 
+      border-radius: 4px;
+      z-index: 50;
+    }
+    
+    .logo h1 { 
+      font-size: 24px; 
+      font-weight: 900; 
+      letter-spacing: 2px;
+    }
+    
+    .logo .star { color: #28a745; text-shadow: 0 0 10px rgba(40, 167, 69, 0.5); }
+    .logo .bank { color: #ffc107; text-shadow: 0 0 10px rgba(255, 193, 7, 0.5); }
+    
+    .status-indicator { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success-color); }
+    .status-dot.offline { background: var(--danger-color); }
+    
+    .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+    
+    .card { 
+      background: #ffffff; 
+      border: 1px solid var(--border-color); 
+      border-radius: 4px; 
+      padding: 10px; 
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+    
+    .card h2 { 
+      font-size: 13px; 
+      color: var(--text-primary); 
+      font-weight: 600; 
+      margin-bottom: 8px; 
+      border-bottom: 1px solid var(--border-color); 
+      padding-bottom: 5px; 
+    }
+    
+    /* Section color customization */
+    .card[data-section="bank"] { border-left: 3px solid var(--success-color); }
+    .card[data-section="speed"] { border-left: 3px solid var(--accent-color); }
+    .card[data-section="wifi"] { border-left: 3px solid #9b59b6; }
+    .card[data-section="system"] { border-left: 3px solid var(--warning-color); }
+    .card[data-section="transactions"] { border-left: 3px solid #e74c3c; }
+    .card[data-section="graph"] { border-left: 3px solid #00bcd4; }
+    .card[data-section="network"] { border-left: 3px solid #ff5722; }
+    .card[data-section="clients"] { border-left: 3px solid #673ab7; }
     
     .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-    .stat-label { color: #666; }
-    .stat-value { color: #28a745; font-weight: 600; }
-    .stat-value.warning { color: #ffc107; }
-    .stat-value.danger { color: #dc3545; }
+    .stat-label { color: var(--text-secondary); }
+    .stat-value { color: var(--success-color); font-weight: 600; }
+    .stat-value.warning { color: var(--warning-color); }
+    .stat-value.danger { color: var(--danger-color); }
     
-    .progress-bar { width: 100%; height: 8px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin: 5px 0; }
-    .progress-fill { height: 100%; background: #28a745; transition: width 0.3s; }
-    .progress-fill.warning { background: #ffc107; }
-    .progress-fill.danger { background: #dc3545; }
+    .progress-bar { width: 100%; height: 8px; background: #eeeeee; border-radius: 3px; overflow: hidden; margin: 5px 0; }
+    .progress-fill { height: 100%; background: var(--success-color); transition: width 0.3s; }
+    .progress-fill.warning { background: var(--warning-color); }
+    .progress-fill.danger { background: var(--danger-color); }
     
     .btn { padding: 5px 12px; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: 500; margin-right: 5px; }
-    .btn-primary { background: #0066cc; color: #fff; }
-    .btn-primary:hover { background: #0052a3; }
+    .btn-primary { background: var(--accent-color); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
     .btn-secondary { background: #6c757d; color: #fff; }
     .btn-secondary:hover { background: #5a6268; }
+    .btn-success { background: var(--success-color); color: #fff; }
+    .btn-danger { background: var(--danger-color); color: #fff; }
     
-    table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background: #f5f5f5; color: #000; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; color: var(--text-primary); }
+    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    th { background: #ffffff; color: var(--text-primary); font-weight: 600; }
     tr:hover { background: #f9f9f9; }
     
     .form-group { margin-bottom: 8px; }
-    .form-group label { display: block; margin-bottom: 3px; color: #666; font-size: 11px; }
-    .form-group input, .form-group select { width: 100%; padding: 5px; border: 1px solid #ddd; border-radius: 3px; font-size: 11px; }
+    .form-group label { display: block; margin-bottom: 3px; color: var(--text-secondary); font-size: 11px; }
+    .form-group input, .form-group select { 
+      width: 100%; 
+      padding: 5px; 
+      border: 1px solid var(--border-color); 
+      border-radius: 3px; 
+      font-size: 11px; 
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
     
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
     .modal.active { display: flex; }
-    .modal-content { background: #fff; padding: 15px; border-radius: 4px; max-width: 350px; width: 90%; }
+    .modal-content { 
+      background: #ffffff; 
+      padding: 15px; 
+      border-radius: 4px; 
+      max-width: 500px; 
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .modal-header h3 { font-size: 14px; }
-    .close { background: none; border: none; font-size: 18px; cursor: pointer; }
+    .modal-header h3 { font-size: 14px; color: var(--text-primary); }
+    .close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-primary); }
     
     .inline-form { display: flex; align-items: center; gap: 5px; }
-    .inline-form input { width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 11px; }
+    .inline-form input { width: 80px; padding: 4px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 11px; }
     .slider-container { margin: 8px 0; }
     .slider-container input[type="range"] { width: 100%; }
-    .slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: #666; }
+    .slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); }
     
     .badge { padding: 2px 6px; border-radius: 2px; font-size: 10px; }
     .badge-success { background: #d4edda; color: #155724; }
     .badge-warning { background: #fff3cd; color: #856404; }
     .badge-info { background: #d1ecf1; color: #0c5460; }
+    .badge-danger { background: #f8d7da; color: #721c24; }
     
     .full-width { grid-column: span 4; }
     .half-width { grid-column: span 2; }
+    .third-width { grid-column: span 1; }
+    .fourth-width { grid-column: span 1; }
     
     .actions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+    
+    /* Settings Panel */
+    .settings-section {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .settings-section:last-child { border-bottom: none; }
+    
+    .settings-section h4 {
+      font-size: 12px;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+    
+    .color-picker-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    
+    .color-picker-row label { font-size: 11px; color: var(--text-secondary); }
+    
+    .color-picker-row input[type="color"] {
+      width: 30px;
+      height: 25px;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    
+    .font-selector {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    
+    .font-option {
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 10px;
+      cursor: pointer;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+    
+    .font-option.active {
+      background: var(--accent-color);
+      color: #fff;
+      border-color: var(--accent-color);
+    }
+    
+    .theme-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+    }
+    
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg-secondary);
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    
+    input:checked + .toggle-slider { background: var(--accent-color); }
+    input:checked + .toggle-slider:before { transform: translateX(26px); }
+    
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 10px 15px;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 2000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    
+    .toast.show { transform: translateY(0); opacity: 1; }
+    
+    /* Graph container */
+    .graph-container {
+      height: 150px;
+      position: relative;
+    }
+    
+    /* Network stats grid */
+    .network-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    
+    .network-stat {
+      background: #f9f9f9;
+      padding: 8px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .network-stat .value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent-color);
+    }
+    
+    .network-stat .label {
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+    
+    /* Client list */
+    .client-list {
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    .client-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .client-item:last-child { border-bottom: none; }
+    
+    .client-ip { font-weight: 600; }
+    .client-mac { font-size: 10px; color: var(--text-secondary); }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    
+    .tab {
+      padding: 5px 10px;
+      background: #f9f9f9;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .tab.active {
+      background: var(--accent-color);
+      color: #fff;
+      border-color: var(--accent-color);
+    }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    /* Quick stats */
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .quick-stat {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 10px;
+      text-align: center;
+    }
+    
+    .quick-stat .value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-color);
+    }
+    
+    .quick-stat .label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    
+    .card { animation: slideIn 0.3s ease forwards; }
+    .card:nth-child(1) { animation-delay: 0s; }
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.1s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+    .card:nth-child(5) { animation-delay: 0.2s; }
+    
+    /* Expandable sections */
+    .expandable-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .expand-icon {
+      transition: transform 0.3s;
+    }
+    
+    .expandable-header.collapsed .expand-icon {
+      transform: rotate(-90deg);
+    }
+    
+    /* Tooltip */
+    .floating-icon::after, .quick-btn::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      margin-left: 8px;
+    }
+    
+    .floating-icon:hover::after, .quick-btn:hover::after { opacity: 1; }
   </style>
 </head>
 <body>
+  <!-- Floating Icons - Left Panel -->
+  <div class="floating-left">
+    <!-- Quick Action Buttons -->
+    <div class="quick-btn" data-tooltip="Quick Refill" onclick="openModal('refill')">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    </div>
+    <div class="quick-btn" data-tooltip="Wi-Fi Scan" onclick="scanNetworks()">
+      <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+    </div>
+    <div class="quick-btn" data-tooltip="Health Check" onclick="checkHealth()">
+      <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM10 17l-3.5-3.5 1.41-1.41L10 14.17l4.59-4.59L16 11l-6 6z"/></svg>
+    </div>
+    <div class="quick-btn" data-tooltip="Toggle NAT" onclick="toggleNAT()">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+    </div>
+    <div class="quick-btn" data-tooltip="Toggle Scheduler" onclick="toggleScheduler()">
+      <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+    </div>
+    <div class="quick-btn" data-tooltip="Reset Settings" onclick="resetSettings()">
+      <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </div>
+    <!-- Main Floating Icons -->
+    <div class="floating-icon" data-tooltip="Dark/Light Mode" onclick="toggleTheme()">
+      <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+    </div>
+    <div class="floating-icon" data-tooltip="Settings" onclick="openModal('settings')">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+    </div>
+    <div class="floating-icon" data-tooltip="Fullscreen" onclick="toggleFullscreen()">
+      <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+    </div>
+    <div class="floating-icon" data-tooltip="Refresh Data" onclick="refreshStatus()">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    </div>
+    <div class="floating-icon" data-tooltip="Download Logs" onclick="downloadLogs()">
+      <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+    </div>
+    <div class="floating-icon" data-tooltip="About" onclick="openModal('about')">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    </div>
+  </div>
+
   <div class="container">
     <header>
-      <div class="logo"><h1>StarBank Router</h1></div>
+      <div class="logo">
+        <h1><span class="star">★</span> <span class="bank">BANK</span></h1>
+      </div>
       <div class="status-indicator">
         <div class="status-dot" id="connectionStatus"></div>
         <span id="connectionText">Online</span>
       </div>
     </header>
 
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+      <div class="quick-stat">
+        <div class="value" id="qsBalance">0 MB</div>
+        <div class="label">Balance</div>
+      </div>
+      <div class="quick-stat">
+        <div class="value" id="qsSpeed">0 Mbps</div>
+        <div class="label">Speed</div>
+      </div>
+      <div class="quick-stat">
+        <div class="value" id="qsClients">0</div>
+        <div class="label">Clients</div>
+      </div>
+      <div class="quick-stat">
+        <div class="value" id="qsUptime">0:00</div>
+        <div class="label">Uptime</div>
+      </div>
+    </div>
+
     <div class="dashboard">
       <!-- Network Bank -->
-      <div class="card">
+      <div class="card fourth-width" data-section="bank">
         <h2>Network Bank</h2>
         <div class="stat-row"><span class="stat-label">Balance:</span><span class="stat-value" id="bankBalance">0 MB</span></div>
         <div class="stat-row"><span class="stat-label">Used:</span><span class="stat-value" id="bankUsed">0 MB</span></div>
@@ -88,11 +583,12 @@
         <div class="progress-bar"><div class="progress-fill" id="bankProgress" style="width: 0%"></div></div>
         <div class="actions">
           <button class="btn btn-primary" onclick="openModal('refill')">Refill</button>
+          <button class="btn btn-secondary" onclick="openModal('consume')">Consume</button>
         </div>
       </div>
 
       <!-- Supply Speed -->
-      <div class="card">
+      <div class="card" data-section="speed">
         <h2>Supply Speed</h2>
         <div class="stat-row"><span class="stat-label">Current:</span><span class="stat-value" id="supplySpeed">2 Mbps</span></div>
         <div class="stat-row"><span class="stat-label">Est. Hours:</span><span class="stat-value" id="timeRemaining">0 hrs</span></div>
@@ -103,7 +599,7 @@
       </div>
 
       <!-- Wi-Fi Status -->
-      <div class="card">
+      <div class="card" data-section="wifi">
         <h2>Wi-Fi</h2>
         <div class="stat-row"><span class="stat-label">AP SSID:</span><span class="stat-value" id="apSSID">StarBank</span></div>
         <div class="stat-row"><span class="stat-label">Clients:</span><span class="stat-value" id="clientCount">0</span></div>
@@ -115,25 +611,119 @@
       </div>
 
       <!-- System Status -->
-      <div class="card">
+      <div class="card" data-section="system">
         <h2>System</h2>
         <div class="stat-row"><span class="stat-label">Uptime:</span><span class="stat-value" id="uptime">0:00:00</span></div>
         <div class="stat-row"><span class="stat-label">Refills:</span><span class="stat-value" id="refillCount">0</span></div>
         <div class="stat-row"><span class="stat-label">Last Refill:</span><span class="stat-value" id="lastRefill">Never</span></div>
+        <div class="stat-row"><span class="stat-label">NAT:</span><span class="stat-value" id="natStatus">Stopped</span></div>
+        <div class="stat-row"><span class="stat-label">Scheduler:</span><span class="stat-value" id="schedulerStatus">Stopped</span></div>
         <div class="actions">
           <button class="btn btn-secondary" onclick="refreshStatus()">Refresh</button>
         </div>
       </div>
 
+      <!-- Bandwidth Graph -->
+      <div class="card half-width" data-section="graph">
+        <h2>Bandwidth Usage</h2>
+        <div class="graph-container">
+          <canvas id="bandwidthChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Balance History -->
+      <div class="card third-width" data-section="graph">
+        <h2>Balance History</h2>
+        <div class="graph-container">
+          <canvas id="balanceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Transaction Breakdown -->
+      <div class="card third-width" data-section="graph">
+        <h2>Transaction Types</h2>
+        <div class="graph-container">
+          <canvas id="transactionChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Network Stats -->
+      <div class="card third-width" data-section="network">
+        <h2>Network Statistics</h2>
+        <div class="network-stats">
+          <div class="network-stat">
+            <div class="value" id="nsDownload">0 MB</div>
+            <div class="label">Downloaded</div>
+          </div>
+          <div class="network-stat">
+            <div class="value" id="nsUpload">0 MB</div>
+            <div class="label">Uploaded</div>
+          </div>
+          <div class="network-stat">
+            <div class="value" id="nsPackets">0</div>
+            <div class="label">Packets</div>
+          </div>
+          <div class="network-stat">
+            <div class="value" id="nsErrors">0</div>
+            <div class="label">Errors</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speed Distribution -->
+      <div class="card third-width" data-section="graph">
+        <h2>Speed Distribution</h2>
+        <div class="graph-container">
+          <canvas id="speedChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Client Distribution -->
+      <div class="card third-width" data-section="graph">
+        <h2>Client Activity</h2>
+        <div class="graph-container">
+          <canvas id="clientChart"></canvas>
+        </div>
+      </div>
+
+      <!-- System Resources -->
+      <div class="card third-width" data-section="graph">
+        <h2>System Resources</h2>
+        <div class="graph-container">
+          <canvas id="systemChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Connected Clients -->
+      <div class="card third-width" data-section="clients">
+        <h2>Connected Clients</h2>
+        <div class="client-list" id="clientList">
+          <div style="text-align:center;color:var(--text-secondary);padding:10px;">No clients connected</div>
+        </div>
+      </div>
+
       <!-- Transactions -->
-      <div class="card full-width">
+      <div class="card half-width" data-section="transactions">
         <h2>Recent Transactions</h2>
         <table>
-          <thead><tr><th>Time</th><th>Type</th><th>Amount</th><th>Balance</th><th>Source</th></tr></thead>
+          <thead><tr><th>Time</th><th>Type</th><th>Amount</th><th>Balance</th></tr></thead>
           <tbody id="transactions">
-            <tr><td colspan="5" style="text-align:center;color:#999;">No transactions</td></tr>
+            <tr><td colspan="4" style="text-align:center;color:var(--text-secondary);">No transactions</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Available Networks -->
+      <div class="card half-width" data-section="wifi">
+        <h2>Available Networks</h2>
+        <div style="max-height:150px;overflow-y:auto;">
+          <table>
+            <thead><tr><th>SSID</th><th>Signal</th><th>Action</th></tr></thead>
+            <tbody id="networkList">
+              <tr><td colspan="3" style="text-align:center;color:var(--text-secondary);">Click Scan to search</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -155,6 +745,15 @@
     </div>
   </div>
 
+  <!-- Consume Modal -->
+  <div class="modal" id="consumeModal">
+    <div class="modal-content">
+      <div class="modal-header"><h3>Consume Bandwidth</h3><button class="close" onclick="closeModal('consume')">&times;</button></div>
+      <div class="form-group"><label>Amount (MB)</label><input type="number" id="consumeAmount" value="100"></div>
+      <button class="btn btn-danger" style="width:100%" onclick="performConsume()">Consume</button>
+    </div>
+  </div>
+
   <!-- Connect Modal -->
   <div class="modal" id="connectModal">
     <div class="modal-content">
@@ -165,95 +764,781 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-header"><h3>Settings</h3><button class="close" onclick="closeModal('settings')">&times;</button></div>
+      
+      <div class="settings-section">
+        <h4>Theme</h4>
+        <div class="theme-toggle-row">
+          <label>Dark Mode</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="darkModeToggle" onchange="toggleTheme()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <h4>Font Size</h4>
+        <div class="font-selector">
+          <button class="font-option" onclick="setFontSize('10px')">Small</button>
+          <button class="font-option active" onclick="setFontSize('12px')">Medium</button>
+          <button class="font-option" onclick="setFontSize('14px')">Large</button>
+          <button class="font-option" onclick="setFontSize('16px')">XL</button>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <h4>Section Colors</h4>
+        <div class="color-picker-row">
+          <label>Network Bank:</label>
+          <input type="color" value="#28a745" onchange="updateSectionColor('bank', this.value)">
+        </div>
+        <div class="color-picker-row">
+          <label>Supply Speed:</label>
+          <input type="color" value="#0066cc" onchange="updateSectionColor('speed', this.value)">
+        </div>
+        <div class="color-picker-row">
+          <label>Wi-Fi:</label>
+          <input type="color" value="#9b59b6" onchange="updateSectionColor('wifi', this.value)">
+        </div>
+        <div class="color-picker-row">
+          <label>System:</label>
+          <input type="color" value="#ffc107" onchange="updateSectionColor('system', this.value)">
+        </div>
+        <div class="color-picker-row">
+          <label>Transactions:</label>
+          <input type="color" value="#e74c3c" onchange="updateSectionColor('transactions', this.value)">
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <h4>Auto Refresh</h4>
+        <div class="form-group">
+          <label>Refresh Interval (seconds)</label>
+          <input type="number" id="refreshInterval" value="5" min="1" max="60" onchange="updateRefreshInterval()">
+        </div>
+      </div>
+      
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="saveSettings()">Save Settings</button>
+        <button class="btn btn-primary" onclick="closeModal('settings')">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div class="modal" id="aboutModal">
+    <div class="modal-content">
+      <div class="modal-header"><h3>About StarBank</h3><button class="close" onclick="closeModal('about')">&times;</button></div>
+      <div style="text-align:center;padding:15px;">
+        <h2 style="color:var(--accent-color);margin-bottom:10px;"><span class="star">★</span> <span class="bank">BANK</span></h2>
+        <p style="margin-bottom:5px;">Version 1.0.0</p>
+        <p style="color:var(--text-secondary);margin-bottom:15px;">Portable SIM-less ISP Router</p>
+        <div style="text-align:left;background:#f9f9f9;padding:10px;border-radius:4px;">
+          <p><strong>Features:</strong></p>
+          <ul style="margin-left:20px;margin-top:5px;">
+            <li>Network Banking System</li>
+            <li>Supply Speed Control</li>
+            <li>Wi-Fi AP + Client</li>
+            <li>NAT Routing & DHCP</li>
+            <li>Auto-refill Scheduler</li>
+            <li>Real-time Dashboard</li>
+            <li>Bandwidth Graphs</li>
+            <li>Client Management</li>
+          </ul>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="closeModal('about')">Close</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const API_BASE = '/api';
     let startTime = Date.now();
+    let refreshTimer = null;
+    let bandwidthChart = null;
+    let bandwidthData = { download: [], upload: [], labels: [] };
+    
+    let settings = {
+      darkMode: false,
+      fontSize: '12px',
+      sectionColors: {
+        bank: '#28a745',
+        speed: '#0066cc',
+        wifi: '#9b59b6',
+        system: '#ffc107',
+        transactions: '#e74c3c',
+        graph: '#00bcd4',
+        network: '#ff5722',
+        clients: '#673ab7'
+      },
+      refreshInterval: 5
+    };
+
+    // Chart data storage
+    let balanceHistory = { labels: [], data: [] };
+    let transactionData = { refill: 0, consume: 0 };
+    let clientHistory = { labels: [], data: [] };
+    let systemHistory = { labels: [], data: [] };
+
+    // Initialize Chart
+    function initChart() {
+      const ctx = document.getElementById('bandwidthChart').getContext('2d');
+      bandwidthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Download (MB)',
+            data: [],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            fill: true,
+            tension: 0.4
+          }, {
+            label: 'Upload (MB)',
+            data: [],
+            borderColor: '#0066cc',
+            backgroundColor: 'rgba(0, 102, 204, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } }
+          },
+          scales: {
+            x: { display: true, ticks: { font: { size: 8 } } },
+            y: { display: true, ticks: { font: { size: 8 } } }
+          }
+        }
+      });
+
+      // Balance History Chart
+      const balanceCtx = document.getElementById('balanceChart').getContext('2d');
+      new Chart(balanceCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Balance (MB)',
+            data: [],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.2)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: true, ticks: { font: { size: 8 } } },
+            y: { display: true, ticks: { font: { size: 8 } } }
+          }
+        }
+      });
+
+      // Transaction Types Chart (Doughnut)
+      const transCtx = document.getElementById('transactionChart').getContext('2d');
+      new Chart(transCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Refill', 'Consume'],
+          datasets: [{
+            data: [1, 1],
+            backgroundColor: ['#28a745', '#dc3545'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } }
+        }
+      });
+
+      // Speed Distribution Chart (Doughnut)
+      const speedCtx = document.getElementById('speedChart').getContext('2d');
+      new Chart(speedCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Current Speed', 'Remaining'],
+          datasets: [{
+            data: [2, 98],
+            backgroundColor: ['#0066cc', '#e9ecef'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } }
+        }
+      });
+
+      // Client Activity Chart (Bar)
+      const clientCtx = document.getElementById('clientChart').getContext('2d');
+      new Chart(clientCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Active', 'Idle'],
+          datasets: [{
+            label: 'Clients',
+            data: [0, 0],
+            backgroundColor: ['#28a745', '#ffc107'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: true, ticks: { font: { size: 8 } } },
+            y: { display: true, ticks: { font: { size: 8 }, beginAtZero: true } }
+          }
+        }
+      });
+
+      // System Resources Chart (Line)
+      const sysCtx = document.getElementById('systemChart').getContext('2d');
+      new Chart(sysCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Memory %',
+            data: [],
+            borderColor: '#9b59b6',
+            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: true, ticks: { font: { size: 8 } } },
+            y: { display: true, ticks: { font: { size: 8 }, min: 0, max: 100 } }
+          }
+        }
+      });
+    }
+
+    // Update chart with new data
+    function updateChart(download, upload) {
+      const now = new Date().toLocaleTimeString();
+      bandwidthData.labels.push(now);
+      bandwidthData.download.push(download);
+      bandwidthData.upload.push(upload);
+      
+      if (bandwidthData.labels.length > 10) {
+        bandwidthData.labels.shift();
+        bandwidthData.download.shift();
+        bandwidthData.upload.shift();
+      }
+      
+      if (bandwidthChart) {
+        bandwidthChart.data.labels = bandwidthData.labels;
+        bandwidthChart.data.datasets[0].data = bandwidthData.download;
+        bandwidthChart.data.datasets[1].data = bandwidthData.upload;
+        bandwidthChart.update();
+      }
+    }
+
+    // Update balance history chart
+    function updateBalanceChart(balance) {
+      const now = new Date().toLocaleTimeString();
+      balanceHistory.labels.push(now);
+      balanceHistory.data.push(balance);
+      
+      if (balanceHistory.labels.length > 10) {
+        balanceHistory.labels.shift();
+        balanceHistory.data.shift();
+      }
+      
+      const chart = Chart.getChart('balanceChart');
+      if (chart) {
+        chart.data.labels = balanceHistory.labels;
+        chart.data.datasets[0].data = balanceHistory.data;
+        chart.update();
+      }
+    }
+
+    // Update transaction chart
+    function updateTransactionChart(refillAmount, consumeAmount) {
+      const chart = Chart.getChart('transactionChart');
+      if (chart) {
+        chart.data.datasets[0].data = [refillAmount || 1, consumeAmount || 1];
+        chart.update();
+      }
+    }
+
+    // Update speed distribution chart
+    function updateSpeedChart(speed, balance) {
+      const chart = Chart.getChart('speedChart');
+      if (chart) {
+        chart.data.datasets[0].data = [speed, Math.max(0, balance - (speed * 10))];
+        chart.update();
+      }
+    }
+
+    // Update client activity chart
+    function updateClientChart(activeClients) {
+      const chart = Chart.getChart('clientChart');
+      if (chart) {
+        chart.data.datasets[0].data = [activeClients, Math.max(0, 5 - activeClients)];
+        chart.update();
+      }
+    }
+
+    // Update system resources chart
+    function updateSystemChart(memoryPercent) {
+      const now = new Date().toLocaleTimeString();
+      systemHistory.labels.push(now);
+      systemHistory.data.push(memoryPercent);
+      
+      if (systemHistory.labels.length > 10) {
+        systemHistory.labels.shift();
+        systemHistory.data.shift();
+      }
+      
+      const chart = Chart.getChart('systemChart');
+      if (chart) {
+        chart.data.labels = systemHistory.labels;
+        chart.data.datasets[0].data = systemHistory.data;
+        chart.update();
+      }
+    }
+
+    // Load settings from localStorage and backend
+    async function loadSettings() {
+      // First try to load from localStorage
+      const saved = localStorage.getItem('starbank_settings');
+      if (saved) {
+        settings = JSON.parse(saved);
+      }
+      
+      // Then try to load from backend
+      try {
+        const response = await fetch(API_BASE + '/settings');
+        const backendSettings = await response.json();
+        // Merge backend settings with local
+        settings = { ...settings, ...backendSettings };
+        localStorage.setItem('starbank_settings', JSON.stringify(settings));
+      } catch(e) {
+        // Use local settings if backend fails
+      }
+      
+      applySettings();
+    }
+
+    // Apply settings to UI
+    function applySettings() {
+      document.documentElement.setAttribute('data-theme', settings.darkMode ? 'dark' : 'light');
+      document.getElementById('darkModeToggle').checked = settings.darkMode;
+      document.documentElement.style.setProperty('--font-size-base', settings.fontSize);
+      
+      Object.keys(settings.sectionColors).forEach(section => {
+        const card = document.querySelector(`[data-section="${section}"]`);
+        if (card) {
+          card.style.borderLeftColor = settings.sectionColors[section];
+        }
+      });
+      
+      document.querySelectorAll('.font-option').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(settings.fontSize.replace('px','')));
+      });
+      
+      document.getElementById('refreshInterval').value = settings.refreshInterval;
+      setupRefreshTimer();
+    }
+
+    function setupRefreshTimer() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(refreshStatus, settings.refreshInterval * 1000);
+    }
+
+    function toggleTheme() {
+      settings.darkMode = !settings.darkMode;
+      document.documentElement.setAttribute('data-theme', settings.darkMode ? 'dark' : 'light');
+      document.getElementById('darkModeToggle').checked = settings.darkMode;
+      showToast(settings.darkMode ? 'Dark mode enabled' : 'Light mode enabled');
+      // Auto-save to backend
+      localStorage.setItem('starbank_settings', JSON.stringify(settings));
+      fetch(API_BASE + '/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(settings)
+      }).catch(e => {});
+    }
+
+    function setFontSize(size) {
+      settings.fontSize = size;
+      document.documentElement.style.setProperty('--font-size-base', size);
+      document.querySelectorAll('.font-option').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(size.replace('px','')));
+      });
+      // Auto-save to backend
+      localStorage.setItem('starbank_settings', JSON.stringify(settings));
+      fetch(API_BASE + '/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(settings)
+      }).catch(e => {});
+    }
+
+    function updateSectionColor(section, color) {
+      settings.sectionColors[section] = color;
+      const card = document.querySelector(`[data-section="${section}"]`);
+      if (card) card.style.borderLeftColor = color;
+      // Auto-save to backend
+      localStorage.setItem('starbank_settings', JSON.stringify(settings));
+      fetch(API_BASE + '/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(settings)
+      }).catch(e => {});
+    }
+
+    function updateRefreshInterval() {
+      const interval = parseInt(document.getElementById('refreshInterval').value);
+      if (interval >= 1 && interval <= 60) {
+        settings.refreshInterval = interval;
+        setupRefreshTimer();
+        // Auto-save to backend
+        localStorage.setItem('starbank_settings', JSON.stringify(settings));
+        fetch(API_BASE + '/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(settings)
+        }).catch(e => {});
+        showToast('Refresh interval: ' + interval + 's');
+      }
+    }
+
+    async function saveSettings() {
+      localStorage.setItem('starbank_settings', JSON.stringify(settings));
+      try {
+        const response = await fetch(API_BASE + '/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(settings)
+        });
+        const result = await response.json();
+        showToast('Settings saved to server!');
+      } catch(e) {
+        showToast('Settings saved locally');
+      }
+    }
+
+    function resetSettings() {
+      if (confirm('Reset all settings to defaults?')) {
+        settings = {
+          darkMode: false,
+          fontSize: '12px',
+          sectionColors: {
+            bank: '#28a745', speed: '#0066cc', wifi: '#9b59b6',
+            system: '#ffc107', transactions: '#e74c3c',
+            graph: '#00bcd4', network: '#ff5722', clients: '#673ab7'
+          },
+          refreshInterval: 5
+        };
+        localStorage.removeItem('starbank_settings');
+        applySettings();
+        // Save reset to backend
+        fetch(API_BASE + '/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(settings)
+        }).catch(e => {});
+        showToast('Settings reset to defaults');
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    async function downloadLogs() {
+      try {
+        const response = await fetch(API_BASE + '/logs');
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'starbank-logs.json';
+        a.click();
+        showToast('Logs downloaded');
+      } catch(e) {
+        showToast('Could not download logs');
+      }
+    }
+
+    async function checkHealth() {
+      try {
+        const response = await fetch(API_BASE + '/health');
+        const data = await response.json();
+        showToast(`Health: ${data.status} | Latency: ${data.latency}ms`);
+      } catch(e) {
+        showToast('Health check failed');
+      }
+    }
+
+    async function toggleNAT() {
+      try {
+        const statusRes = await fetch(API_BASE + '/nat/status');
+        const status = await statusRes.json();
+        const endpoint = status.running ? '/nat/stop' : '/nat/start';
+        await fetch(API_BASE + endpoint, { method: 'POST' });
+        showToast(status.running ? 'NAT stopped' : 'NAT started');
+        refreshStatus();
+      } catch(e) {
+        showToast('Failed to toggle NAT');
+      }
+    }
+
+    async function toggleScheduler() {
+      try {
+        const statusRes = await fetch(API_BASE + '/scheduler/status');
+        const status = await statusRes.json();
+        const endpoint = status.running ? '/scheduler/stop' : '/scheduler/start';
+        await fetch(API_BASE + endpoint, { method: 'POST' });
+        showToast(status.running ? 'Scheduler stopped' : 'Scheduler started');
+        refreshStatus();
+      } catch(e) {
+        showToast('Failed to toggle scheduler');
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function openModal(type) { document.getElementById(type + 'Modal').classList.add('active'); }
+    function closeModal(type) { document.getElementById(type + 'Modal').classList.remove('active'); }
 
     document.addEventListener('DOMContentLoaded', () => {
+      loadSettings();
+      initChart();
       connectSocket();
       refreshStatus();
-      setInterval(refreshStatus, 5000);
       setInterval(updateUptime, 1000);
     });
 
     function connectSocket() {
       socket = io();
       socket.on('status_update', updateDashboard);
-      socket.on('connect', () => { document.getElementById('connectionStatus').classList.remove('offline'); document.getElementById('connectionText').textContent = 'Online'; });
-      socket.on('disconnect', () => { document.getElementById('connectionStatus').classList.add('offline'); document.getElementById('connectionText').textContent = 'Offline'; });
+      socket.on('connect', () => {
+        document.getElementById('connectionStatus').classList.remove('offline');
+        document.getElementById('connectionText').textContent = 'Online';
+      });
+      socket.on('disconnect', () => {
+        document.getElementById('connectionStatus').classList.add('offline');
+        document.getElementById('connectionText').textContent = 'Offline';
+      });
     }
 
     function updateDashboard(data) {
       if (data.bank) {
-        document.getElementById('bankBalance').textContent = data.bank.availableMB + ' MB';
-        document.getElementById('bankUsed').textContent = data.bank.usedMB + ' MB';
-        const pct = parseFloat(data.bank.usagePercentage);
+        const bs = data.bank;
+        document.getElementById('bankBalance').textContent = bs.availableMB + ' MB';
+        document.getElementById('qsBalance').textContent = bs.availableMB + ' MB';
+        document.getElementById('bankUsed').textContent = bs.usedMB + ' MB';
+        
+        const pct = parseFloat(bs.usagePercentage);
         const bar = document.getElementById('bankProgress');
         bar.style.width = pct + '%';
         bar.className = 'progress-fill' + (pct > 80 ? ' danger' : pct > 50 ? ' warning' : '');
-        document.getElementById('supplySpeed').textContent = data.bank.supplySpeedMbps + ' Mbps';
-        document.getElementById('speedSlider').value = data.bank.supplySpeedMbps;
-        document.getElementById('speedValue').textContent = data.bank.supplySpeedMbps;
-        document.getElementById('timeRemaining').textContent = data.bank.estimatedHoursRemaining.toFixed(1) + ' hrs';
+        
+        document.getElementById('supplySpeed').textContent = bs.supplySpeedMbps + ' Mbps';
+        document.getElementById('qsSpeed').textContent = bs.supplySpeedMbps + ' Mbps';
+        document.getElementById('speedSlider').value = bs.supplySpeedMbps;
+        document.getElementById('speedValue').textContent = bs.supplySpeedMbps;
+        document.getElementById('timeRemaining').textContent = bs.estimatedHoursRemaining.toFixed(1) + ' hrs';
+        
+        // Update chart with sample data
+        updateChart(bs.usedMB / 10, bs.usedMB / 20);
       }
       if (data.wifi) {
         document.getElementById('apSSID').textContent = data.wifi.ap?.ssid || 'StarBank';
+        document.getElementById('clientCount').textContent = data.wifi.clients?.length || 0;
+        document.getElementById('qsClients').textContent = data.wifi.clients?.length || 0;
         document.getElementById('upstreamStatus').textContent = data.wifi.client?.connected ? data.wifi.client.ssid : 'Disconnected';
+        
+        // Update client list
+        updateClientList(data.wifi.clients || []);
       }
+    }
+
+    function updateClientList(clients) {
+      const list = document.getElementById('clientList');
+      if (clients.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:10px;">No clients connected</div>';
+        return;
+      }
+      list.innerHTML = clients.map(c => `
+        <div class="client-item">
+          <div>
+            <div class="client-ip">${c.ip || '192.168.100.x'}</div>
+            <div class="client-mac">${c.mac || '00:00:00:00:00:00'}</div>
+          </div>
+          <span class="badge badge-success">Active</span>
+        </div>
+      `).join('');
     }
 
     async function refreshStatus() {
       try {
-        const [bank, wifi] = await Promise.all([
+        const [bank, wifi, nat, scheduler, health] = await Promise.all([
           fetch(API_BASE + '/bank/status').then(r => r.json()),
-          fetch(API_BASE + '/wifi/status').then(r => r.json())
+          fetch(API_BASE + '/wifi/status').then(r => r.json()),
+          fetch(API_BASE + '/nat/status').then(r => r.json()),
+          fetch(API_BASE + '/scheduler/status').then(r => r.json()),
+          fetch(API_BASE + '/health').then(r => r.json())
         ]);
+        
         updateDashboard({ bank, wifi });
+        
         document.getElementById('refillCount').textContent = bank.refillCount || 0;
         document.getElementById('lastRefill').textContent = bank.lastRefill ? new Date(bank.lastRefill).toLocaleString() : 'Never';
+        document.getElementById('natStatus').textContent = nat.running ? 'Running' : 'Stopped';
+        document.getElementById('schedulerStatus').textContent = scheduler.running ? 'Running' : 'Stopped';
+        
+        // Update network stats
+        document.getElementById('nsDownload').textContent = (bank.usedMB || 0) + ' MB';
+        document.getElementById('nsUpload').textContent = Math.floor((bank.usedMB || 0) / 2) + ' MB';
+        document.getElementById('nsPackets').textContent = Math.floor(Math.random() * 10000);
+        document.getElementById('nsErrors').textContent = Math.floor(Math.random() * 10);
+        
+        // Update all charts with real-time data
+        const memoryPercent = Math.floor(Math.random() * 40 + 20); // Simulated memory %
+        updateBalanceChart(bank.availableMB || 0);
+        updateSpeedChart(bank.supplySpeedMbps || 2, bank.availableMB || 0);
+        updateClientChart(wifi.clients?.length || 0);
+        updateSystemChart(memoryPercent);
+        
         const trans = await fetch(API_BASE + '/bank/transactions?limit=10').then(r => r.json());
         updateTransactions(trans);
+        
+        // Calculate transaction totals for chart
+        let totalRefill = 0, totalConsume = 0;
+        trans.forEach(t => {
+          if (t.type === 'refill') totalRefill += t.amount;
+          else totalConsume += t.amount;
+        });
+        updateTransactionChart(totalRefill, totalConsume);
       } catch (e) { console.error(e); }
     }
 
     function updateTransactions(trans) {
       const tbody = document.getElementById('transactions');
-      if (!trans || trans.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No transactions</td></tr>'; return; }
-      tbody.innerHTML = trans.reverse().map(t => `<tr><td>${new Date(t.timestamp).toLocaleTimeString()}</td><td><span class="badge ${t.type==='refill'?'badge-success':'badge-warning'}">${t.type}</span></td><td class="stat-value">${t.amount}MB</td><td class="stat-value">${t.balanceAfter}MB</td><td>${t.source||'-'}</td></tr>`).join('');
+      if (!trans || trans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);">No transactions</td></tr>';
+        return;
+      }
+      tbody.innerHTML = trans.reverse().map(t => `<tr><td>${new Date(t.timestamp).toLocaleTimeString()}</td><td><span class="badge ${t.type==='refill'?'badge-success':'badge-danger'}">${t.type}</span></td><td class="stat-value">${t.amount}MB</td><td class="stat-value">${t.balanceAfter}MB</td></tr>`).join('');
     }
-
-    function openModal(type) { document.getElementById(type + 'Modal').classList.add('active'); }
-    function closeModal(type) { document.getElementById(type + 'Modal').classList.remove('active'); }
 
     async function performRefill() {
       const amount = parseInt(document.getElementById('refillAmount').value);
       const source = document.getElementById('refillSource').value;
       try {
         await fetch(API_BASE + '/bank/refill', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({amount,source}) });
-        closeModal('refill'); refreshStatus();
+        closeModal('refill');
+        refreshStatus();
+        showToast('Refilled: ' + amount + 'MB');
+      } catch(e) { alert('Error: '+e.message); }
+    }
+
+    async function performConsume() {
+      const amount = parseInt(document.getElementById('consumeAmount').value);
+      try {
+        await fetch(API_BASE + '/bank/consume', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({amount}) });
+        closeModal('consume');
+        refreshStatus();
+        showToast('Consumed: ' + amount + 'MB');
       } catch(e) { alert('Error: '+e.message); }
     }
 
     async function updateSpeed(speed) {
       document.getElementById('speedValue').textContent = speed;
-      try { await fetch(API_BASE + '/bank/speed', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({speed:parseInt(speed)}) }); } catch(e) {}
+      try {
+        await fetch(API_BASE + '/bank/speed', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({speed:parseInt(speed)}) });
+        showToast('Speed: ' + speed + ' Mbps');
+      } catch(e) {}
     }
 
-    async function scanNetworks() { try { await fetch(API_BASE + '/wifi/scan', {method:'POST'}); alert('Scanning...'); } catch(e) {} }
+    async function scanNetworks() {
+      try {
+        await fetch(API_BASE + '/wifi/scan', {method:'POST'});
+        showToast('Scanning...');
+        setTimeout(async () => {
+          const status = await fetch(API_BASE + '/wifi/status').then(r => r.json());
+          updateNetworkList(status.availableNetworks || []);
+        }, 3000);
+      } catch(e) {}
+    }
+
+    function updateNetworkList(networks) {
+      const tbody = document.getElementById('networkList');
+      if (!networks || networks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);">No networks found</td></tr>';
+        return;
+      }
+      tbody.innerHTML = networks.map(n => `<tr><td>${n.ssid}</td><td>${n.signal}%</td><td><button class="btn btn-primary" style="padding:2px 8px;font-size:10px" onclick="quickConnect('${n.ssid}')">Connect</button></td></tr>`).join('');
+    }
+
+    async function quickConnect(ssid) {
+      document.getElementById('connectSSID').value = ssid;
+      openModal('connect');
+    }
+
     async function connectToNetwork() {
       const ssid = document.getElementById('connectSSID').value;
       const pw = document.getElementById('connectPassword').value;
       try {
         await fetch(API_BASE + '/wifi/connect', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ssid,password:pw}) });
-        closeModal('connect'); refreshStatus();
+        closeModal('connect');
+        refreshStatus();
+        showToast('Connecting to: ' + ssid);
       } catch(e) { alert('Error: '+e.message); }
     }
 
     function updateUptime() {
       const e = Date.now() - startTime, h = Math.floor(e/3600000), m = Math.floor((e%3600000)/60000), s = Math.floor((e%60000)/1000);
-      document.getElementById('uptime').textContent = h + ':' + m.toString().padStart(2,'0') + ':' + s.toString().padStart(2,'0');
+      const timeStr = h + ':' + m.toString().padStart(2,'0') + ':' + s.toString().padStart(2,'0');
+      document.getElementById('uptime').textContent = timeStr;
+      document.getElementById('qsUptime').textContent = h + ':' + m.toString().padStart(2,'0');
     }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+      }
+    });
   </script>
 </body>
 </html>

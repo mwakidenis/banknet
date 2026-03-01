@@ -33,6 +33,20 @@ class APIServer {
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: true }));
     
+    // Settings storage (in-memory, could be persisted to file)
+    this.settings = {
+      darkMode: false,
+      fontSize: '12px',
+      sectionColors: {
+        bank: '#28a745',
+        speed: '#0066cc',
+        wifi: '#9b59b6',
+        system: '#ffc107',
+        transactions: '#e74c3c'
+      },
+      refreshInterval: 5
+    };
+    
     if (apiConfig.cors_enabled) {
       this.app.use(cors());
     }
@@ -52,7 +66,22 @@ class APIServer {
 
     // Health check
     this.app.get('/api/health', (req, res) => {
-      res.json({ status: 'ok', timestamp: new Date().toISOString() });
+      const start = Date.now();
+      // Calculate latency by measuring response time
+      setImmediate(() => {
+        const latency = Date.now() - start;
+        res.json({ 
+          status: 'ok', 
+          timestamp: new Date().toISOString(),
+          latency: latency,
+          services: {
+            bank: this.bank.getStatus().availableMB > 0 ? 'active' : 'idle',
+            wifi: this.wifi.getStatus().ap?.enabled ? 'active' : 'idle',
+            nat: this.nat.getStatus().running ? 'active' : 'stopped',
+            scheduler: this.scheduler.getStatus().running ? 'active' : 'stopped'
+          }
+        });
+      });
     });
 
     // Bank endpoints
@@ -173,6 +202,33 @@ class APIServer {
         wifi: this.wifi.getStatus(),
         nat: this.nat.getStatus(),
         scheduler: this.scheduler.getStatus()
+      });
+    });
+
+    // Settings endpoints
+    this.app.get('/api/settings', (req, res) => {
+      res.json(this.settings);
+    });
+
+    this.app.post('/api/settings', (req, res) => {
+      try {
+        const newSettings = req.body;
+        this.settings = { ...this.settings, ...newSettings };
+        res.json({ success: true, settings: this.settings });
+      } catch (error) {
+        res.status(400).json({ error: error.message });
+      }
+    });
+
+    // Logs endpoint
+    this.app.get('/api/logs', (req, res) => {
+      res.json({
+        events: this.bank.getTransactions(50),
+        system: {
+          uptime: process.uptime(),
+          memory: process.memoryUsage(),
+          timestamp: new Date().toISOString()
+        }
       });
     });
   }
