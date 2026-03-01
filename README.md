@@ -114,4 +114,4 @@ STARBANK_HOST=192.168.1.100 STARBANK_PORT=8080 node src/cli/status.js
 
 ## License
 
-MIT License
+Apache License
