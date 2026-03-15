@@ -7,113 +7,380 @@
   <img src="https://res.cloudinary.com/dqv8dlj2s/image/upload/v1772376069/Screenshot_2026-03-01_173916_hfreov.png"/>
 </p>
 
-**⭐Bank** is a battery-powered, SIM-less portable router that stores ISP/satellite internet access in a "network bank" and serves connected devices as a mini-ISP. Inspired by Starlink, it allows offline internet usage, supply throttling, and LAN refill.
+# 🌐 BankNet — Portable SIM-less ISP Router
 
-## Features
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+![Node](https://img.shields.io/badge/node-%3E=16-green)
+![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20%7C%20Linux-orange)
+![Status](https://img.shields.io/badge/status-Prototype-yellow)
+![Networking](https://img.shields.io/badge/focus-Networking%20Systems-blue)
 
-- **Satellite Internet Access** - Receives internet via satellite module (LEO/MEO)
-- **ISP Banking** - Stores usable network quota locally
-- **Mini-ISP Hotspot** - Provides Wi-Fi or LAN access to devices
-- **Supply Control** - Adjustable speeds (1-1000 Mbps)
-- **Auto Refill** - Automatically reconnects to recharge the bank
-- **LAN Refill Support** - Inject data directly via Ethernet
-- **Battery Powered** - Portable operation for several hours
+**BankNet** is a **battery-powered portable router that acts as a micro-ISP**, capable of **storing internet bandwidth ("network banking") and distributing it to connected devices** via Wi-Fi or LAN.
 
-## Quick Start
+Inspired by satellite internet architectures like Starlink, BankNet explores the concept of **bandwidth storage and controlled distribution**, allowing devices to use internet access even when upstream connectivity is intermittent.
 
-### Prerequisites
+This project demonstrates **embedded networking, edge computing, and software-defined networking using Node.js and Linux networking tools.**
 
-- Node.js 16+ 
-- Raspberry Pi (recommended) or Linux-based system
-- Wi-Fi adapter supporting AP mode
+---
 
-### Installation
+# 🚀 Project Goals
+
+BankNet explores the idea of a **portable programmable ISP node**.
+
+Objectives:
+
+- Provide **internet access in disconnected environments**
+- Enable **bandwidth banking and distribution**
+- Build a **portable edge networking device**
+- Demonstrate **software-defined networking on embedded hardware**
+- Implement **traffic shaping and bandwidth management**
+
+---
+
+# ✨ Features
+
+### 🌍 Upstream Internet Connectivity
+BankNet can obtain internet through:
+
+- Satellite modules (LEO / MEO)
+- WiFi uplink networks
+- Ethernet WAN
+- LTE / 5G fallback (future support)
+
+---
+
+### 🏦 Network Banking
+
+A unique concept where internet bandwidth is **stored locally and distributed as needed**.
+
+Capabilities:
+
+- Local bandwidth quota storage
+- Usage accounting
+- Adjustable supply rate
+- Bandwidth conservation during outages
+
+---
+
+### 📡 Portable Mini-ISP
+
+BankNet acts as a **local ISP hotspot** providing internet access to connected devices.
+
+Supported interfaces:
+
+- WiFi Access Point
+- Ethernet LAN
+
+Features:
+
+- NAT routing
+- DHCP service
+- network isolation
+- device monitoring
+
+---
+
+### ⚡ Supply Control
+
+Dynamic bandwidth allocation.
+
+```
+1 Mbps → 1000 Mbps
+```
+
+Useful for:
+
+- traffic throttling
+- fair network usage
+- bandwidth conservation
+
+---
+
+### 🔁 Auto Refill
+
+Automatically reconnects to upstream sources to **recharge the network bank** when capacity is low.
+
+---
+
+### 🔌 LAN Refill
+
+Administrators can **inject internet data via Ethernet** for offline mesh networks or edge deployments.
+
+---
+
+### 🔋 Battery Powered
+
+Designed for **portable networking deployments**.
+
+| Battery Capacity | Estimated Runtime |
+|-----------------|------------------|
+| 10,000 mAh | 4–6 hours |
+| 20,000 mAh | 8–12 hours |
+
+---
+
+# 🏗 System Architecture
+
+```
+              Upstream Internet
+        (Satellite / WiFi / WAN)
+                    │
+                    ▼
+          ┌───────────────────┐
+          │  WiFi Uplink      │
+          │  Connection Mgmt  │
+          └─────────┬─────────┘
+                    │
+                    ▼
+          ┌───────────────────┐
+          │   Network Bank    │
+          │ Bandwidth Storage │
+          └─────────┬─────────┘
+                    │
+                    ▼
+          ┌───────────────────┐
+          │ NAT / Routing     │
+          │ Traffic Control   │
+          └─────────┬─────────┘
+                    │
+                    ▼
+           ┌─────────────────┐
+           │ Local Hotspot   │
+           │ WiFi + Ethernet │
+           └─────────┬───────┘
+                     │
+     ┌───────────────▼───────────────┐
+     │ Connected Client Devices      │
+     │ phones • laptops • IoT        │
+     └───────────────────────────────┘
+```
+
+---
+
+# 📂 Repository Structure
+
+```
+banknet/
+│
+├── config/                 # YAML configuration files
+│
+├── src/
+│   ├── banking/            # Network bank management
+│   ├── wifi/               # WiFi client/AP manager
+│   ├── nat/                # NAT routing engine
+│   ├── scheduler/          # Auto-refill scheduler
+│   ├── api/                # REST API server
+│   ├── web/                # Dashboard UI
+│   └── cli/                # CLI tools
+│
+├── docs/                   # Project documentation
+│
+├── README.md
+├── LICENSE
+├── package.json
+└── requirements.txt
+```
+
+---
+
+# 🧰 Technology Stack
+
+### Core
+
+- Node.js
+- Linux networking tools
+- iptables / nftables
+- Traffic Control (tc)
+
+### Networking
+
+- NAT routing
+- DHCP server
+- WiFi access point
+- bandwidth shaping
+
+### Optional Tools
+
+- Python automation scripts
+
+---
+
+# ⚙️ Installation
+
+### 1. Clone Repository
 
 ```bash
-# Clone and navigate to project
-cd starbank
+git clone https://github.com/mwakidenis/banknet.git
+cd banknet
+```
 
-# Install Node.js dependencies
+---
+
+### 2. Install Dependencies
+
+```bash
 npm install
+```
 
-# Install Python dependencies (optional, for CLI tools)
+Optional CLI tools:
+
+```bash
 pip install -r requirements.txt
+```
 
-# Start the application
+---
+
+### 3. Start Router Service
+
+```bash
 npm start
 ```
 
-### Configuration
+---
 
-Edit `config/config.yaml` to customize:
+# 🔧 Configuration
 
-- Network settings
-- Wi-Fi AP credentials
-- Banking parameters
-- Scheduler options
-
-## Architecture
+Configuration file:
 
 ```
-starbank/
-├── config/           # Configuration files
-├── src/
-│   ├── banking/      # Network bank management
-│   ├── wifi/         # Wi-Fi client/AP manager
-│   ├── nat/          # NAT/routing engine
-│   ├── scheduler/    # Auto-refill scheduler
-│   ├── api/          # REST API server
-│   ├── web/          # Dashboard UI
-│   └── cli/          # CLI tools
-└── docs/             # Documentation
+config/config.yaml
 ```
 
-## API Endpoints
+Example:
+
+```yaml
+wifi:
+  ssid: BankNet
+  password: securepass123
+
+bank:
+  capacity: 10000
+  refill_threshold: 2000
+
+network:
+  max_speed: 200
+```
+
+---
+
+# 🌐 REST API
 
 | Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/bank/status` | GET | Get bank status |
+|--------|--------|-------------|
+| `/api/bank/status` | GET | Get network bank status |
 | `/api/bank/refill` | POST | Refill bank |
-| `/api/bank/speed` | POST | Set supply speed |
-| `/api/wifi/status` | GET | Get Wi-Fi status |
-| `/api/wifi/scan` | POST | Scan networks |
-| `/api/nat/start` | POST | Start NAT |
-| `/api/scheduler/start` | POST | Start scheduler |
+| `/api/bank/speed` | POST | Adjust bandwidth supply |
+| `/api/wifi/status` | GET | WiFi hotspot status |
+| `/api/wifi/scan` | POST | Scan available networks |
+| `/api/nat/start` | POST | Start NAT routing |
+| `/api/scheduler/start` | POST | Start auto refill |
 
-## Web Dashboard
+---
 
-Access the dashboard at `http://localhost:8080` to:
+# 🖥 Web Dashboard
 
-- View bank balance and usage
-- Adjust supply speed
-- Connect to upstream networks
-- Monitor system status
+Access the router dashboard:
 
-## CLI Usage
+```
+http://localhost:8080
+```
+
+Features:
+
+- network bank visualization
+- bandwidth control
+- upstream network connection
+- system monitoring
+
+---
+
+# 🖥 CLI Tools
+
+Check system status:
 
 ```bash
-# Check system status
 node src/cli/status.js
+```
 
-# With custom host/port
+Custom host/port:
+
+```bash
 STARBANK_HOST=192.168.1.100 STARBANK_PORT=8080 node src/cli/status.js
 ```
 
-## Hardware Requirements
+---
 
-- **CPU**: Raspberry Pi CM4 or ESP32-S2
-- **Storage**: 2GB+ microSD
-- **Wi-Fi**: Dual-band adapter
-- **Battery**: 10,000-20,000mAh Li-ion
+# 🧪 Hardware Requirements
 
-## Development Phases
+| Component | Recommendation |
+|----------|---------------|
+| CPU | Raspberry Pi CM4 |
+| RAM | 2GB+ |
+| Storage | 16GB microSD |
+| WiFi | Dual-band adapter |
+| Battery | 10k–20k mAh |
 
-1. **Phase 1** - Prototype: Dual-mode Wi-Fi, basic bank storage
-2. **Phase 2** - Core Software: Virtual routing, speed management
-3. **Phase 3** - Hardware Integration: Battery, LAN, display
-4. **Phase 4** - Advanced Features: LTE/5G fallback, analytics
-5. **Phase 5** - Documentation & Launch
+---
 
-## License
+# 🛣 Development Roadmap
 
-Apache License
+### Phase 1 — Prototype
+- dual-mode WiFi
+- basic banking
+- NAT routing
+
+### Phase 2 — Core Software
+- bandwidth accounting
+- supply control
+- scheduling system
+
+### Phase 3 — Hardware Integration
+- battery system
+- LAN refill
+- device display interface
+
+### Phase 4 — Advanced Networking
+- LTE / 5G fallback
+- mesh networking
+- network analytics
+
+### Phase 5 — Production
+- security hardening
+- hardware design
+- documentation
+
+---
+
+# 📊 Potential Applications
+
+- rural connectivity
+- disaster recovery networking
+- edge computing nodes
+- mobile research networks
+- portable ISP infrastructure
+
+---
+
+# 🎓 Academic Context
+
+This project is part of a **network systems engineering capstone** focusing on:
+
+- distributed networking
+- edge computing
+- software-defined networking
+- portable ISP architectures
+
+---
+
+# 📜 License
+
+Apache 2.0 License
+
+---
+
+# 👤 Author
+
+**Denis Mwaki**
+
+GitHub  
+https://github.com/mwakidenis
