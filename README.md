@@ -35,6 +35,140 @@ BankNet is inspired by modern satellite networking systems like **Starlink**, ex
 
 ---
 
+# 🎥 Project Demo
+
+<p align="center">
+
+<img src="docs/banknet-demo.gif" width="800"/>
+
+</p>
+
+**What the demo shows**
+
+• Booting the portable router  
+• Connecting to upstream network  
+• Banking internet bandwidth  
+• Devices connecting to the hotspot  
+• Live bandwidth distribution  
+
+---
+
+# ⚙️ Live System Flow
+
+```mermaid
+flowchart LR
+
+Internet[Upstream Internet<br>Satellite / WiFi / LTE]
+Uplink[Uplink Manager]
+Bank[Network Bank Engine]
+Traffic[Traffic Control]
+Router[NAT Router]
+AP[WiFi Access Point]
+LAN[Ethernet LAN]
+Clients[Connected Devices]
+
+Internet --> Uplink
+Uplink --> Bank
+Bank --> Traffic
+Traffic --> Router
+Router --> AP
+Router --> LAN
+AP --> Clients
+LAN --> Clients
+```
+
+---
+
+# 🧠 Engineering Highlights
+
+This project demonstrates practical skills in:
+
+• Embedded networking systems  
+• Linux packet routing and NAT  
+• Bandwidth shaping using traffic control  
+• REST API design for infrastructure services  
+• Edge computing architecture  
+• Portable ISP design  
+
+---
+
+# 📊 Repository Metrics
+
+<p align="center">
+
+![GitHub stars](https://img.shields.io/github/stars/mwakidenis/banknet?style=social)
+
+![GitHub forks](https://img.shields.io/github/forks/mwakidenis/banknet?style=social)
+
+![GitHub issues](https://img.shields.io/github/issues/mwakidenis/banknet)
+
+![GitHub last commit](https://img.shields.io/github/last-commit/mwakidenis/banknet)
+
+</p>
+
+---
+
+# 🧩 Core Modules
+
+| Module | Responsibility |
+|------|------|
+| **Bank Engine** | Stores bandwidth quota |
+| **WiFi Manager** | Handles AP and uplink connections |
+| **NAT Router** | Routes packets to connected devices |
+| **Traffic Controller** | Bandwidth throttling and shaping |
+| **Scheduler** | Automatic network bank refilling |
+| **API Server** | Router control interface |
+| **Web Dashboard** | Monitoring and configuration |
+
+---
+
+# 🔬 Future Research Directions
+
+BankNet can evolve into an advanced **edge networking platform** with:
+
+• decentralized mesh networking  
+• peer-to-peer bandwidth exchange  
+• satellite edge nodes  
+• distributed ISP infrastructure  
+
+---
+
+# ⭐ Support the Project
+
+If you find this project interesting:
+
+⭐ Star the repository  
+🍴 Fork the project  
+🐛 Submit issues or improvements  
+
+---
+
+# 🖼 Adding the Demo GIF
+
+Place the demo file here:
+
+```
+docs/banknet-demo.gif
+```
+
+Recommended tools for recording the demo:
+
+• OBS Studio (screen capture)  
+• Peek (quick GIF recording)  
+• ScreenToGif  
+
+Record:
+
+1. Start router  
+2. Open dashboard  
+3. Connect device  
+4. Show bandwidth changing  
+
+This creates a **powerful visual demo for recruiters**.
+
+---
+---
+
 # 🚀 Key Features
 
 ## 🌐 Upstream Internet Connectivity
